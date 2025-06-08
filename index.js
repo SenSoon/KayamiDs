@@ -33,9 +33,15 @@ client.slashCommands = new Collection();
 let player; // On déclare d'abord
 
 client.once('ready', async () => {
-
-  player = await createPlayer(client); // ⏳ Création correcte du player
-  client.player = player;
+  console.log(`✅ Connecté en tant que ${client.user.tag}`);
+  
+  try {
+    player = await createPlayer(client); // ⏳ Création correcte du player
+    client.player = player;
+    console.log('✅ Player créé avec succès');
+  } catch (error) {
+    console.error('❌ Erreur lors de la création du player:', error);
+  }
 
   setupDestructiveListeners(client);
   registerSnipe(client);
@@ -67,12 +73,7 @@ function loadCommands(folderPath, collection, isSlash = false) {
 loadCommands(path.join(__dirname, 'commands/prefix'), client.prefixCommands);
 loadCommands(path.join(__dirname, 'commands/slash'), client.slashCommands, true);
 
-// Événement prêt
-client.once('ready', () => {
-    console.log(`✅ Connecté en tant que ${client.user.tag}`);
-    setupDestructiveListeners(client);
-    registerSnipe(client);
-  });
+
 
 // Gestion des commandes prefix
 client.on('messageCreate', message => {

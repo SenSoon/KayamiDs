@@ -6,7 +6,7 @@ import { Client, GatewayIntentBits, Collection, REST, Routes } from 'discord.js'
 import { setupDestructiveListeners } from './events/antiraidManager.js';
 import { registerSnipe } from './events/messageDelete.js';
 import { hasAccess } from './utils/hasAccess.js';
-
+import { createPlayer } from './utils/player.js';
 
 // Initialisation __dirname pour ESModule
 const __filename = fileURLToPath(import.meta.url);
@@ -19,14 +19,27 @@ config();
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildVoiceStates,
     GatewayIntentBits.GuildPresences
   ],
 });
 
 client.prefixCommands = new Collection();
 client.slashCommands = new Collection();
+
+let player; // On déclare d'abord
+
+client.once('ready', async () => {
+
+  player = await createPlayer(client); // ⏳ Création correcte du player
+  client.player = player;
+
+  setupDestructiveListeners(client);
+  registerSnipe(client);
+});
 
 // Fonction pour charger les commandes depuis les sous-dossiers
 function loadCommands(folderPath, collection, isSlash = false) {

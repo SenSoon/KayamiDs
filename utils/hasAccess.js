@@ -1,4 +1,4 @@
-console.log("✅ access.js chargé");
+console.log("✅ hasAccess.js chargé");
 import fs from 'fs';
 
 export function hasAccess(message, requiredPermission = null) {

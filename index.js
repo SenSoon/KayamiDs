@@ -6,7 +6,8 @@ import { Client, GatewayIntentBits, Collection, REST, Routes } from 'discord.js'
 import { setupDestructiveListeners } from './events/antiraidManager.js';
 import { registerSnipe } from './events/messageDelete.js';
 import { hasAccess } from './utils/hasAccess.js';
-import { createPlayer } from './utils/player.js';
+import voiceStateUpdate from './events/voiceStateUpdate.js';
+
 
 // Initialisation __dirname pour ESModule
 const __filename = fileURLToPath(import.meta.url);
@@ -30,20 +31,12 @@ const client = new Client({
 client.prefixCommands = new Collection();
 client.slashCommands = new Collection();
 
-let player; // On déclare d'abord
+client.on('voiceStateUpdate', (oldState, newState) => {
+  voiceStateUpdate.execute(oldState, newState);
+});
 
 client.once('ready', async () => {
   console.log(`✅ Connecté en tant que ${client.user.tag}`);
-  
-  try {
-    player = await createPlayer(client); // ⏳ Création correcte du player
-    client.player = player;
-    console.log('✅ Player créé avec succès');
-  } catch (error) {
-    console.error('❌ Erreur lors de la création du player:', error);
-  }
-
-  setupDestructiveListeners(client);
   registerSnipe(client);
 });
 
@@ -77,9 +70,16 @@ loadCommands(path.join(__dirname, 'commands/slash'), client.slashCommands, true)
 
 // Gestion des commandes prefix
 client.on('messageCreate', message => {
-  if (!message.content.startsWith(process.env.PREFIX) || message.author.bot) return;
+  const prefixFile = path.resolve('data/prefixes.json');
+  let prefixes = {};
+  if (fs.existsSync(prefixFile)) {
+    prefixes = JSON.parse(fs.readFileSync(prefixFile, 'utf8'));
+  }
+  const guildPrefix = prefixes[message.guild?.id] || process.env.PREFIX;
 
-  const args = message.content.slice(process.env.PREFIX.length).trim().split(/ +/);
+  if (!message.content.startsWith(guildPrefix) || message.author.bot) return;
+
+  const args = message.content.slice(guildPrefix.length).trim().split(/ +/);
   const commandName = args.shift().toLowerCase();
 
   const command = client.prefixCommands.get(commandName);
